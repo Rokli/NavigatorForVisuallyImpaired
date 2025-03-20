@@ -14,6 +14,7 @@ tensorflowLiteGpu = "2.13.0"
 tensorflowLiteMetadata = "0.4.4"
 tensorflowLiteSupport = "0.4.4"
 tensorflowLiteTaskVision = "0.4.4"
+constraintlayout = "2.2.1"
 
 [libraries]
 androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "cameraCore" }
@@ -39,6 +40,7 @@ tensorflow-lite-gpu = { module = "org.tensorflow:tensorflow-lite-gpu", version.r
 tensorflow-lite-metadata = { module = "org.tensorflow:tensorflow-lite-metadata", version.ref = "tensorflowLiteMetadata" }
 tensorflow-lite-support = { module = "org.tensorflow:tensorflow-lite-support", version.ref = "tensorflowLiteSupport" }
 tensorflow-lite-task-vision = { module = "org.tensorflow:tensorflow-lite-task-vision", version.ref = "tensorflowLiteTaskVision" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 
 
 [plugins]
