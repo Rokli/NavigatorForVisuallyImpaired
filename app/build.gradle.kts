@@ -36,6 +36,9 @@ android {
     }
     buildFeatures {
         compose = true
+        viewBinding = true
+        //noinspection DataBindingWithoutKapt
+        dataBinding = true
     }
 }
 
@@ -51,6 +54,11 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    implementation(libs.androidx.activity)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
 
     // tests
     testImplementation(libs.junit)
@@ -68,6 +76,8 @@ dependencies {
     runtimeOnly(libs.androidx.camera.view)
 
     //TensorFlow
+    implementation(libs.tensorflow.lite.gpu.delegate.plugin)
+    implementation(libs.tensorflow.lite.gpu.api)
     implementation(libs.tensorflow.lite)
     implementation(libs.tensorflow.lite.gpu)
     implementation(libs.tensorflow.lite.support)
