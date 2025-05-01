@@ -40,8 +40,8 @@ class DetectorService(
     init {
         val compatList = CompatibilityList()
 
-        val options = Interpreter.Options().apply{
-            if(compatList.isDelegateSupportedOnThisDevice){
+        val options = Interpreter.Options().apply {
+            if (compatList.isDelegateSupportedOnThisDevice) {
                 val delegateOptions = compatList.bestOptionsForThisDevice
                 this.addDelegate(GpuDelegate(delegateOptions))
             } else {
@@ -87,8 +87,8 @@ class DetectorService(
 
         val options = if (isGpu) {
             val compatList = CompatibilityList()
-            Interpreter.Options().apply{
-                if(compatList.isDelegateSupportedOnThisDevice){
+            Interpreter.Options().apply {
+                if (compatList.isDelegateSupportedOnThisDevice) {
                     val delegateOptions = compatList.bestOptionsForThisDevice
                     this.addDelegate(GpuDelegate(delegateOptions))
                 } else {
@@ -96,7 +96,7 @@ class DetectorService(
                 }
             }
         } else {
-            Interpreter.Options().apply{
+            Interpreter.Options().apply {
                 this.setNumThreads(4)
             }
         }
@@ -109,11 +109,12 @@ class DetectorService(
         interpreter.close()
     }
 
-    fun detect(frame: Bitmap) {
+    fun detect(frame: Bitmap, depthImage: ShortArray) {
         if (tensorWidth == 0
             || tensorHeight == 0
             || numChannel == 0
-            || numElements == 0) {
+            || numElements == 0
+        ) {
             return
         }
 
@@ -126,10 +127,11 @@ class DetectorService(
         val processedImage = imageProcessor.process(tensorImage)
         val imageBuffer = processedImage.buffer
 
-        val output = TensorBuffer.createFixedSize(intArrayOf(1, numChannel, numElements), OUTPUT_IMAGE_TYPE)
+        val output =
+            TensorBuffer.createFixedSize(intArrayOf(1, numChannel, numElements), OUTPUT_IMAGE_TYPE)
         interpreter.run(imageBuffer, output.buffer)
 
-        val bestBoxes = bestBox(output.floatArray)
+        val bestBoxes = bestBox(output.floatArray, depthImage)
         inferenceTime = SystemClock.uptimeMillis() - inferenceTime
 
         if (bestBoxes == null) {
@@ -140,7 +142,7 @@ class DetectorService(
         detectorListener.onDetect(bestBoxes, inferenceTime)
     }
 
-    private fun bestBox(array: FloatArray) : List<BoundingBox>? {
+    private fun bestBox(array: FloatArray, depthImage: ShortArray): List<BoundingBox>? {
 
         val boundingBoxes = mutableListOf<BoundingBox>()
 
@@ -149,7 +151,7 @@ class DetectorService(
             var maxIdx = -1
             var j = 4
             var arrayIdx = c + numElements * j
-            while (j < numChannel){
+            while (j < numChannel) {
                 if (array[arrayIdx] > maxConf) {
                     maxConf = array[arrayIdx]
                     maxIdx = j - 4
@@ -164,10 +166,10 @@ class DetectorService(
                 val cy = array[c + numElements] // 1
                 val w = array[c + numElements * 2]
                 val h = array[c + numElements * 3]
-                val x1 = cx - (w/2F)
-                val y1 = cy - (h/2F)
-                val x2 = cx + (w/2F)
-                val y2 = cy + (h/2F)
+                val x1 = cx - (w / 2F)
+                val y1 = cy - (h / 2F)
+                val x2 = cx + (w / 2F)
+                val y2 = cy + (h / 2F)
                 if (x1 < 0F || x1 > 1F) continue
                 if (y1 < 0F || y1 > 1F) continue
                 if (x2 < 0F || x2 > 1F) continue
@@ -177,7 +179,8 @@ class DetectorService(
                     BoundingBox(
                         x1 = x1, y1 = y1, x2 = x2, y2 = y2,
                         cx = cx, cy = cy, w = w, h = h,
-                        cnf = maxConf, classNumber = maxIdx, className = clsName
+                        cnf = maxConf, classNumber = maxIdx, className = clsName,
+                        distance = calculateDistance(cx, cy, depthImage)
                     )
                 )
             }
@@ -188,11 +191,11 @@ class DetectorService(
         return applyNMS(boundingBoxes)
     }
 
-    private fun applyNMS(boxes: List<BoundingBox>) : MutableList<BoundingBox> {
+    private fun applyNMS(boxes: List<BoundingBox>): MutableList<BoundingBox> {
         val sortedBoxes = boxes.sortedByDescending { it.cnf }.toMutableList()
         val selectedBoxes = mutableListOf<BoundingBox>()
 
-        while(sortedBoxes.isNotEmpty()) {
+        while (sortedBoxes.isNotEmpty()) {
             val first = sortedBoxes.first()
             selectedBoxes.add(first)
             sortedBoxes.remove(first)
@@ -219,6 +222,20 @@ class DetectorService(
         val box1Area = box1.w * box1.h
         val box2Area = box2.w * box2.h
         return intersectionArea / (box1Area + box2Area - intersectionArea)
+    }
+
+    private fun calculateDistance(cx: Float, cy: Float, depthImage: ShortArray): Float {
+        if (depthImage == null) return -1f
+        val depthBuffer = depthImage
+        val depthWidth = 640
+        val depthHeight = 640
+
+        val centerX = (cx * depthWidth).toInt()
+        val centerY = (cy * depthHeight).toInt()
+
+
+        val depthValue = depthBuffer[centerY * depthWidth + centerX]
+        return depthValue / 1000f
     }
 
     companion object {

@@ -84,4 +84,7 @@ dependencies {
     implementation(libs.tensorflow.lite.metadata)
     implementation(libs.tensorflow.lite.task.vision)
 
+    //ARCore
+    implementation(libs.core)
+
 }
