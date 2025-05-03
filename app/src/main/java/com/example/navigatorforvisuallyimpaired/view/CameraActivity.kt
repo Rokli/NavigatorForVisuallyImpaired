@@ -1,6 +1,7 @@
 package com.example.navigatorforvisuallyimpaired.view
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
@@ -61,9 +62,13 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
 
 
         if (allPermissionsGranted()) {
-            depthCamera = DepthCameraService(this, false )
-            startCameraThread()
-            depthCamera.open()
+//            depthCamera = DepthCameraService(this, false )
+//            startCameraThread()
+//            depthCamera.open()
+            depthImage = ShortArray(640*640);
+            for(index in depthImage.indices) {
+                depthImage[index] = (1000..10000).random().toShort()
+            }
             startCamera()
         } else {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
@@ -80,7 +85,13 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
     }
 
     private fun bindListeners() {
+        binding.backButton.setOnClickListener { onBackButtonPressed() }
+    }
 
+    @Override
+    override fun onBackPressed() {
+        onBackButtonPressed()
+        super.onBackPressed()
     }
 
     private fun startCamera() {
@@ -159,6 +170,12 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
         } catch (exc: Exception) {
             Log.e(TAG, "Use case binding failed", exc)
         }
+    }
+
+    private fun onBackButtonPressed(){
+        val intent = Intent(this, MainActivity::class.java)
+        startActivity(intent)
+        finish()
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {

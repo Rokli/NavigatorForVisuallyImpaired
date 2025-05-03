@@ -4,10 +4,6 @@
 
     <uses-feature android:name="android.hardware.camera" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-feature android:name="android.hardware.camera.ar" android:required="true" />
-    <queries>
-        <package android:name="com.google.ar.core" />
-    </queries>
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -39,10 +35,6 @@
         <uses-native-library
             android:name="libOpenCL-pixel.so"
             android:required="false" />
-
-        <meta-data
-            android:name="com.google.ar.core"
-            android:value="required" />
     </application>
 
 </manifest>

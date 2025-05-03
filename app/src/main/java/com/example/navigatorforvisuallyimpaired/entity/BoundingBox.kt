@@ -12,5 +12,6 @@ data class BoundingBox (
     val cnf: Float,
     val classNumber: Int,
     val className: String,
-    val distance: Float
+    val distance: Float,
+    val rate: Float
 )
