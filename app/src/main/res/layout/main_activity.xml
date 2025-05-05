@@ -1,74 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#EDEDED"
-        android:fitsSystemWindows="true"
-        >
+        android:fitsSystemWindows="true">
 
+    <!-- Вертикальные Guideline для Toolbar -->
+    <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guideline_start"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.05" />
 
+    <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guideline_logo_end"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.15" />
+
+    <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guideline_text_start"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.17" />
+
+    <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guideline_text_end"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.95" />
+
+    <!-- Toolbar -->
     <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
             android:layout_width="0dp"
             android:layout_height="75dp"
             android:background="#FFFFFF"
-            android:id="@+id/toolbar"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintVertical_bias="0.0" />
+            app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Логотип -->
     <ImageView
-            android:layout_width="64dp"
-            android:layout_height="64dp"
             android:id="@+id/imageView"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
             android:src="@drawable/logo"
-            app:layout_constraintTop_toTopOf="@+id/toolbar"
-            app:layout_constraintStart_toStartOf="@+id/toolbar"
-            app:layout_constraintBottom_toBottomOf="@+id/toolbar"
-            android:layout_marginStart="5dp"
-            app:layout_constraintVertical_bias="0.0"
-            android:layout_marginBottom="5dp"
-            android:layout_marginTop="5dp"
-            app:layout_constraintEnd_toStartOf="@+id/textView" />
+            app:layout_constraintStart_toStartOf="@id/guideline_start"
+            app:layout_constraintEnd_toStartOf="@id/guideline_logo_end"
+            app:layout_constraintTop_toTopOf="@id/toolbar"
+            app:layout_constraintBottom_toBottomOf="@id/toolbar"
+            app:layout_constraintDimensionRatio="1:1" />
 
+    <!-- Заголовок -->
+    <TextView
+            android:id="@+id/textView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="ИИ видео навигатор"
+            android:textColor="@color/black"
+            android:textSize="28sp"
+            android:fontFamily="sans-serif-black"
+            android:gravity="center_vertical"
+            app:layout_constraintStart_toStartOf="@id/guideline_text_start"
+            app:layout_constraintEnd_toEndOf="@id/guideline_text_end"
+            app:layout_constraintTop_toTopOf="@id/toolbar"
+            app:layout_constraintBottom_toBottomOf="@id/toolbar" />
+
+    <!-- Кнопка -->
     <Button
             android:id="@+id/openCameraActivityButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="Режим видео навигатора"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
             android:background="@drawable/custom_button"
-            app:layout_constraintTop_toBottomOf="@+id/toolbar"
-            app:layout_constraintHorizontal_bias="0.498"
+            android:textSize="24sp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
             android:layout_marginTop="10dp"
-            app:layout_constraintVertical_bias="0.0"
-            android:layout_marginStart="10dp"
-            android:layout_marginEnd="10dp"
-            android:textSize="24sp" />
-
-    <TextView
-            android:text="ИИ видео навигатор "
-            android:layout_width="0dp"
-            android:layout_height="64dp"
-            android:id="@+id/textView"
-            app:layout_constraintTop_toTopOf="@+id/toolbar"
-            app:layout_constraintBottom_toBottomOf="@+id/toolbar"
-            app:layout_constraintStart_toStartOf="@+id/toolbar"
-            android:layout_marginStart="80dp"
-            android:fontFamily="sans-serif-black"
-            android:textSize="34sp"
-            android:layout_marginEnd="5dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintVertical_bias="0.0"
-            android:layout_marginTop="5dp"
-            android:layout_marginBottom="5dp"
-            android:textColor="@color/black" />
+            app:layout_constraintTop_toBottomOf="@id/toolbar"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

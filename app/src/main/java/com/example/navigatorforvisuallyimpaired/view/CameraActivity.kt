@@ -30,6 +30,7 @@ import com.example.navigatorforvisuallyimpaired.service.DetectorService
 import com.example.tofcamera.DepthCameraService
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageListener {
 
@@ -44,8 +45,11 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
     private lateinit var depthCameraThread: HandlerThread
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var depthImage:ShortArray
+    private val depthImageLock = Any()
+
 
     private lateinit var binding: ActivityCameraBinding
+    private var isActive : Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,6 +81,8 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
         bindListeners()
     }
 
+
+
     private fun startCameraThread() {
         depthCameraThread = HandlerThread("Camera")
         depthCameraThread.start()
@@ -91,7 +97,6 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
     @Override
     override fun onBackPressed() {
         onBackButtonPressed()
-        super.onBackPressed()
     }
 
     private fun startCamera() {
@@ -153,7 +158,9 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
                 matrix, true
             )
 
-            detector?.detect(rotatedBitmap, depthImage)
+            synchronized(depthImageLock) {
+                detector?.detect(rotatedBitmap, depthImage)
+            }
         }
 
         cameraProvider.unbindAll()
@@ -198,12 +205,23 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
 
     override fun onDestroy() {
         super.onDestroy()
-        detector?.close()
+        imageAnalyzer?.clearAnalyzer()
+        cameraProvider?.unbindAll()
         cameraExecutor.shutdown()
+        try {
+            if (!cameraExecutor.awaitTermination(800, TimeUnit.MILLISECONDS)) {
+                cameraExecutor.shutdownNow()
+            }
+        } catch (e: InterruptedException) {
+            cameraExecutor.shutdownNow()
+        }
     }
 
     override fun onResume() {
         super.onResume()
+        if (::cameraExecutor.isInitialized && cameraExecutor.isShutdown) {
+            cameraExecutor = Executors.newSingleThreadExecutor()
+        }
         if (allPermissionsGranted()) {
             startCamera()
         } else {
@@ -236,6 +254,11 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
     }
 
     override fun onNewImage(depthMap: ShortArray) {
-        depthImage = depthMap.clone()
+        synchronized(depthImageLock) {
+            depthImage = depthMap.clone()
+        }
     }
+
+
+
 }

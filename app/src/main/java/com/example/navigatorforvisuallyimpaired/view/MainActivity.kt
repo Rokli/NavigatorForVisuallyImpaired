@@ -23,9 +23,14 @@ class MainActivity : ComponentActivity() {
         binding.openCameraActivityButton.setOnClickListener { openDetectCameraActivity() }
     }
 
+    override fun onResume() {
+        super.onResume()
+    }
+
     private fun openDetectCameraActivity() {
         if(allPermissionsGranted()) {
             val intent = Intent(this, CameraActivity::class.java)
+            //intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             startActivity(intent)
             finish()
         } else {
