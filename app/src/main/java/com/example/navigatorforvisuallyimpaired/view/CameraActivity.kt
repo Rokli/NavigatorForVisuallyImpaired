@@ -8,6 +8,7 @@ import android.graphics.Matrix
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
+import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -24,15 +25,21 @@ import com.example.navigatorforvisuallyimpaired.Constants.LABELS_PATH
 import com.example.navigatorforvisuallyimpaired.Constants.MODEL_PATH
 import com.example.navigatorforvisuallyimpaired.databinding.ActivityCameraBinding
 import com.example.navigatorforvisuallyimpaired.entity.BoundingBox
+import com.example.navigatorforvisuallyimpaired.entity.Direction
+import com.example.navigatorforvisuallyimpaired.entity.SpeechObject
 import com.example.navigatorforvisuallyimpaired.service.DepthCameraImageListener
 import com.example.navigatorforvisuallyimpaired.service.DetectorListener
 import com.example.navigatorforvisuallyimpaired.service.DetectorService
 import com.example.tofcamera.DepthCameraService
+import com.google.ar.core.dependencies.e
+import java.util.Comparator
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageListener {
+class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageListener,
+    TextToSpeech.OnInitListener {
 
     private val isFrontCamera = false
 
@@ -44,12 +51,18 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
     private lateinit var depthCamera: DepthCameraService<CameraActivity>
     private lateinit var depthCameraThread: HandlerThread
     private lateinit var cameraExecutor: ExecutorService
-    private lateinit var depthImage:ShortArray
+    private lateinit var depthImage: ShortArray
     private val depthImageLock = Any()
+    private val sayLock = Any()
 
 
     private lateinit var binding: ActivityCameraBinding
-    private var isActive : Boolean = false
+    private var isSound: Boolean = true
+
+    private lateinit var textToSpeech: TextToSpeech
+    private val ttsExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+    private var lastSpokenTime: Long = 0
+    private val speechCooldownMs = 2000
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,13 +77,14 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
             }
         }
 
+        textToSpeech = TextToSpeech(this, this)
 
         if (allPermissionsGranted()) {
 //            depthCamera = DepthCameraService(this, false )
 //            startCameraThread()
 //            depthCamera.open()
-            depthImage = ShortArray(640*640);
-            for(index in depthImage.indices) {
+            depthImage = ShortArray(640 * 640);
+            for (index in depthImage.indices) {
                 depthImage[index] = (1000..10000).random().toShort()
             }
             startCamera()
@@ -81,7 +95,17 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
         bindListeners()
     }
 
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            val result = textToSpeech!!.setLanguage(Locale.US)
 
+            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                Log.e("TTS", "The Language not supported!")
+            } else {
+                textToSpeech.setSpeechRate(0.8f)
+            }
+        }
+    }
 
     private fun startCameraThread() {
         depthCameraThread = HandlerThread("Camera")
@@ -92,6 +116,7 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
 
     private fun bindListeners() {
         binding.backButton.setOnClickListener { onBackButtonPressed() }
+        binding.sound.setOnClickListener { onSoundButtonPressed() }
     }
 
     @Override
@@ -179,10 +204,14 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
         }
     }
 
-    private fun onBackButtonPressed(){
+    private fun onBackButtonPressed() {
         val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
         finish()
+    }
+
+    private fun onSoundButtonPressed(){
+        isSound = !isSound
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
@@ -205,6 +234,10 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
 
     override fun onDestroy() {
         super.onDestroy()
+        if (::textToSpeech.isInitialized) {
+            textToSpeech.stop()
+            textToSpeech.shutdown()
+        }
         imageAnalyzer?.clearAnalyzer()
         cameraProvider?.unbindAll()
         cameraExecutor.shutdown()
@@ -250,7 +283,54 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
                 setResults(boundingBoxes)
                 invalidate()
             }
+            speechBoundingObject(boundingBoxes)
         }
+    }
+
+    fun getObjectToSpeech(boundingBoxes: List<BoundingBox>): List<SpeechObject> {
+        var leftBoxes = mutableListOf<SpeechObject>()
+        var middleBoxes = mutableListOf<SpeechObject>()
+        var rightBoxes = mutableListOf<SpeechObject>()
+        boundingBoxes.forEach {
+            if ((it.x1 + it.x2) / 2 <= 0.33) {
+                leftBoxes.add(SpeechObject(Direction.LEFT, it.className, (it.x1 + it.x2) / 2))
+            } else if ((it.x1 + it.x2) / 2 > 0.33 && (it.x1 + it.x2) / 2 <= 0.66) {
+                middleBoxes.add(SpeechObject(Direction.MIDDLE, it.className, (it.x1 + it.x2) / 2))
+            } else {
+                rightBoxes.add(SpeechObject(Direction.RIGHT, it.className, (it.x1 + it.x2) / 2))
+            }
+        }
+        leftBoxes = leftBoxes.sortedByDescending { it.xm }.toMutableList()
+        middleBoxes = middleBoxes.sortedByDescending { it.xm }.toMutableList()
+        rightBoxes = rightBoxes.sortedBy { it.xm }.toMutableList()
+        val top3Left = leftBoxes.take(2)
+        val top5Middle = middleBoxes.take(3)
+        val bottom3Right = rightBoxes.take(2)
+
+        return top3Left + top5Middle + bottom3Right
+    }
+
+    private fun speakTextAsync(speechObject: List<SpeechObject>) {
+        ttsExecutor.execute {
+            synchronized(sayLock) {
+                var speech = speechObject.joinToString("                   ") { "${it.text} ${it.direction.name}" }
+                textToSpeech.speak(speech, TextToSpeech.QUEUE_FLUSH, null, "")
+            }
+        }
+    }
+
+    private fun speechBoundingObject(boundingBoxes: List<BoundingBox>){
+        if(isSound) {
+            val currentTime = System.currentTimeMillis()
+            val speechObject = getObjectToSpeech(boundingBoxes)
+
+            if (currentTime - lastSpokenTime < speechCooldownMs) {
+                return
+            }
+            lastSpokenTime = currentTime
+            speakTextAsync(speechObject)
+        }
+
     }
 
     override fun onNewImage(depthMap: ShortArray) {
@@ -258,7 +338,6 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
             depthImage = depthMap.clone()
         }
     }
-
 
 
 }
