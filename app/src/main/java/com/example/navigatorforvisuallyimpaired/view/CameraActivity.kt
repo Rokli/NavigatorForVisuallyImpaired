@@ -25,14 +25,14 @@ import com.example.navigatorforvisuallyimpaired.Constants.LABELS_PATH
 import com.example.navigatorforvisuallyimpaired.Constants.MODEL_PATH
 import com.example.navigatorforvisuallyimpaired.databinding.ActivityCameraBinding
 import com.example.navigatorforvisuallyimpaired.entity.BoundingBox
-import com.example.navigatorforvisuallyimpaired.entity.Direction
-import com.example.navigatorforvisuallyimpaired.entity.SpeechObject
+import com.example.navigatorforvisuallyimpaired.entity.HorizontalDirection
+import com.example.navigatorforvisuallyimpaired.entity.VoicedObject
 import com.example.navigatorforvisuallyimpaired.service.DepthCameraImageListener
 import com.example.navigatorforvisuallyimpaired.service.DetectorListener
 import com.example.navigatorforvisuallyimpaired.service.DetectorService
+import com.example.navigatorforvisuallyimpaired.service.Translator
+import com.example.navigatorforvisuallyimpaired.service.VoicedObjectService
 import com.example.tofcamera.DepthCameraService
-import com.google.ar.core.dependencies.e
-import java.util.Comparator
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -48,21 +48,22 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
     private var camera: Camera? = null
     private var cameraProvider: ProcessCameraProvider? = null
     private var detector: DetectorService? = null
+    private var voicedObjectService: VoicedObjectService = VoicedObjectService()
     private lateinit var depthCamera: DepthCameraService<CameraActivity>
     private lateinit var depthCameraThread: HandlerThread
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var depthImage: ShortArray
     private val depthImageLock = Any()
     private val sayLock = Any()
-
+    private var canSay: Boolean = true
 
     private lateinit var binding: ActivityCameraBinding
     private var isSound: Boolean = true
 
     private lateinit var textToSpeech: TextToSpeech
     private val ttsExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-    private var lastSpokenTime: Long = 0
-    private val speechCooldownMs = 2000
+    private var translator: Translator = Translator(this)
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,12 +98,12 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            val result = textToSpeech!!.setLanguage(Locale.US)
-
+            val result = textToSpeech!!.setLanguage(Locale("ru"))
+            translator.locale = "ru"
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                 Log.e("TTS", "The Language not supported!")
             } else {
-                textToSpeech.setSpeechRate(0.8f)
+                textToSpeech.setSpeechRate(1.2f)
             }
         }
     }
@@ -210,7 +211,7 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
         finish()
     }
 
-    private fun onSoundButtonPressed(){
+    private fun onSoundButtonPressed() {
         isSound = !isSound
     }
 
@@ -277,60 +278,32 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
     }
 
     override fun onDetect(boundingBoxes: List<BoundingBox>, inferenceTime: Long) {
+        speakTextAsync(boundingBoxes)
         runOnUiThread {
             binding.inferenceTime.text = "${inferenceTime}ms"
             binding.overlay.apply {
                 setResults(boundingBoxes)
                 invalidate()
             }
-            speechBoundingObject(boundingBoxes)
         }
     }
 
-    fun getObjectToSpeech(boundingBoxes: List<BoundingBox>): List<SpeechObject> {
-        var leftBoxes = mutableListOf<SpeechObject>()
-        var middleBoxes = mutableListOf<SpeechObject>()
-        var rightBoxes = mutableListOf<SpeechObject>()
-        boundingBoxes.forEach {
-            if ((it.x1 + it.x2) / 2 <= 0.33) {
-                leftBoxes.add(SpeechObject(Direction.LEFT, it.className, (it.x1 + it.x2) / 2))
-            } else if ((it.x1 + it.x2) / 2 > 0.33 && (it.x1 + it.x2) / 2 <= 0.66) {
-                middleBoxes.add(SpeechObject(Direction.MIDDLE, it.className, (it.x1 + it.x2) / 2))
-            } else {
-                rightBoxes.add(SpeechObject(Direction.RIGHT, it.className, (it.x1 + it.x2) / 2))
+    private fun speakTextAsync(boundingBoxes: List<BoundingBox>) {
+        if(canSay) {
+            canSay = false
+            ttsExecutor.execute {
+                synchronized(sayLock) {
+                    var voicedObjects = voicedObjectService.getVoicedObject(boundingBoxes)
+                    voicedObjects.forEach {
+                        var speech: String = translator.getLocaleString(it.objectName) +
+                                " " + translator.getLocaleString(it.verticalDirection.name) +
+                                " " + translator.getLocaleString(it.horizontalDirection.name)
+                        textToSpeech.speak(speech, TextToSpeech.QUEUE_ADD, null, "")
+                    }
+                }
             }
+            canSay = true
         }
-        leftBoxes = leftBoxes.sortedByDescending { it.xm }.toMutableList()
-        middleBoxes = middleBoxes.sortedByDescending { it.xm }.toMutableList()
-        rightBoxes = rightBoxes.sortedBy { it.xm }.toMutableList()
-        val top3Left = leftBoxes.take(2)
-        val top5Middle = middleBoxes.take(3)
-        val bottom3Right = rightBoxes.take(2)
-
-        return top3Left + top5Middle + bottom3Right
-    }
-
-    private fun speakTextAsync(speechObject: List<SpeechObject>) {
-        ttsExecutor.execute {
-            synchronized(sayLock) {
-                var speech = speechObject.joinToString("                   ") { "${it.text} ${it.direction.name}" }
-                textToSpeech.speak(speech, TextToSpeech.QUEUE_FLUSH, null, "")
-            }
-        }
-    }
-
-    private fun speechBoundingObject(boundingBoxes: List<BoundingBox>){
-        if(isSound) {
-            val currentTime = System.currentTimeMillis()
-            val speechObject = getObjectToSpeech(boundingBoxes)
-
-            if (currentTime - lastSpokenTime < speechCooldownMs) {
-                return
-            }
-            lastSpokenTime = currentTime
-            speakTextAsync(speechObject)
-        }
-
     }
 
     override fun onNewImage(depthMap: ShortArray) {

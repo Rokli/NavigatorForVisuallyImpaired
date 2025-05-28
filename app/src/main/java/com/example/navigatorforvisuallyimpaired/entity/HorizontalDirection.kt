@@ -1,7 +1,7 @@
 package com.example.navigatorforvisuallyimpaired.entity
 
-enum class Direction {
+enum class HorizontalDirection {
     LEFT,
-    RIGHT,
-    MIDDLE
+    MIDDLE,
+    RIGHT
 }

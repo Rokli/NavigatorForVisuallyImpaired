@@ -1,4 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ИИ Навигатор</string>
+    <string name="LEFT">Слева</string>
+    <string name="MIDDLE">По центру</string>
+    <string name="RIGHT">Справа</string>
+    <string name="UP">Сверху</string>
+    <string name="DOWN">Снизу</string>
+
+    <string name="tree">дерево</string>
+    <string name="red_light">красный свет</string>
+    <string name="green_light">зеленый свет</string>
+    <string name="crosswalk">пешеходный переход</string>
+    <string name="tactile_paving">тактильная плитка</string>
+    <string name="sign">знак</string>
+    <string name="person">человек</string>
+    <string name="pedestrian">пешеход</string>
+    <string name="bicycle">велосипед</string>
+    <string name="bus">автобус</string>
+    <string name="truck">грузовик</string>
+    <string name="car">автомобиль</string>
+    <string name="motorcycle">мотоцикл</string>
+    <string name="reflective_cone">светоотражающий конус</string>
+    <string name="ashcan">мусорный бак</string>
+    <string name="warning_column">предупреждающая колонна</string>
+    <string name="roadblock">дорожное заграждение</string>
+    <string name="pole">столб</string>
+    <string name="dog">собака</string>
+    <string name="tricycle">трехколесный велосипед</string>
+    <string name="fire_hydrant">пожарный гидрант</string>
+    <string name="blind_road">дорожка для слепых</string>
 </resources>
