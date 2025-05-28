@@ -1,4 +1,31 @@
 <resources>
     <string name="app_name">NavigatorForVisuallyImpaired</string>
-    <string name="gpu">GPU</string>
+    <string name="LEFT">Left</string>
+    <string name="MIDDLE">Middle</string>
+    <string name="RIGHT">Right</string>
+    <string name="UP">Up</string>
+    <string name="DOWN">Down</string>
+
+    <string name="tree">tree</string>
+    <string name="red_light">red_light</string>
+    <string name="green_light">green_light</string>
+    <string name="crosswalk">crosswalk</string>
+    <string name="tactile_paving">tactile_paving</string>
+    <string name="sign">sign</string>
+    <string name="person">person</string>
+    <string name="pedestrian">pedestrian</string>
+    <string name="bicycle">bicycle</string>
+    <string name="bus">bus</string>
+    <string name="truck">truck</string>
+    <string name="car">car</string>
+    <string name="motorcycle">motorcycle</string>
+    <string name="reflective_cone">reflective_cone</string>
+    <string name="ashcan">ashcan</string>
+    <string name="warning_column">warning_column</string>
+    <string name="roadblock">roadblock</string>
+    <string name="pole">pole</string>
+    <string name="dog">dog</string>
+    <string name="tricycle">tricycle</string>
+    <string name="fire_hydrant">fire_hydrant</string>
+    <string name="blind_road">blind_road</string>
 </resources>
