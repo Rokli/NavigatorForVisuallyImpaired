@@ -60,7 +60,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) : View(context, attrs
             canvas.drawRect(left, top, right, bottom, boxPaint)
             val drawableText = it.className
             val drawableDistance = it.distance.toString()
-            val drawableRate = (it.rate*100).toInt().toString()
+            val drawableRate = (it.cnf*100).toInt().toString()
 
 
             textBackgroundPaint.getTextBounds(drawableText, 0, drawableText.length, bounds)

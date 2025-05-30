@@ -179,7 +179,6 @@ class DetectorServiceTensorFlow(
                         cx = cx, cy = cy, w = w, h = h,
                         cnf = maxConf, classNumber = maxIdx, className = clsName,
                         distance = calculateDistance(cx, cy, depthImage),
-                        maxConf
                     )
                 )
             }
