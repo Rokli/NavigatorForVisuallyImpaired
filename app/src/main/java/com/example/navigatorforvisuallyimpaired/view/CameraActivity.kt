@@ -74,7 +74,7 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         cameraExecutor.execute {
-            detector = DetectorServiceTensorFlow(baseContext, MODEL_PATH, LABELS_PATH, this) {
+            detector = DetectorServiceTensorFlow(baseContext, this) {
                 toast(it)
             }
             detector?.restart(isGpu = true)

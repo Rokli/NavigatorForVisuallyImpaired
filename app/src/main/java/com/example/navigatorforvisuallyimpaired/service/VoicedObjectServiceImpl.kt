@@ -9,7 +9,6 @@ import com.example.navigatorforvisuallyimpaired.entity.VoicedObject
 
 class VoicedObjectServiceImpl : VoicedObjectService {
 
-    private val voicedCooldownMs: Long = 5000
     private var lastVoicedObjectList: MutableList<LastTimeVoicedObject> = ArrayList()
 
     override fun getVoicedObject(boundingBoxList: List<BoundingBox>): List<VoicedObject> {

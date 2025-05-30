@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.os.SystemClock
 import android.util.Log
+import com.example.navigatorforvisuallyimpaired.Constants
 import com.example.navigatorforvisuallyimpaired.entity.BoundingBox
 import com.example.navigatorforvisuallyimpaired.service.MetaData.extractNamesFromLabelFile
 import com.example.navigatorforvisuallyimpaired.service.MetaData.extractNamesFromMetadata
@@ -21,8 +22,6 @@ import java.nio.MappedByteBuffer
 
 class DetectorServiceTensorFlow(
     private val context: Context,
-    private val modelPath: String,
-    private val labelPath: String?,
     private val detectorListener: DetectorListener,
     private val message: (String) -> Unit
 ) : DetectorService {
@@ -40,16 +39,11 @@ class DetectorServiceTensorFlow(
         .build()
 
     init {
-        val model = FileUtil.loadMappedFile(context, modelPath)
+        val model = FileUtil.loadMappedFile(context, Constants.MODEL_PATH)
         labels.addAll(extractNamesFromMetadata(model))
 
         if (labels.isEmpty()) {
-            if (labelPath == null) {
-                message("Model not contains metadata, provide LABELS_PATH in Constants.kt")
-                labels.addAll(MetaData.TEMP_CLASSES)
-            } else {
-                labels.addAll(extractNamesFromLabelFile(context, labelPath))
-            }
+            labels.addAll(extractNamesFromLabelFile(context, Constants.LABELS_PATH))
         }
 
         interpreter = createInterpreter(model)
@@ -104,7 +98,7 @@ class DetectorServiceTensorFlow(
 
     override fun restart(isGpu: Boolean) {
         interpreter.close()
-        val model = FileUtil.loadMappedFile(context, modelPath)
+        val model = FileUtil.loadMappedFile(context, Constants.MODEL_PATH)
         interpreter = createInterpreter(model)
     }
 
