@@ -25,13 +25,14 @@ import com.example.navigatorforvisuallyimpaired.Constants.LABELS_PATH
 import com.example.navigatorforvisuallyimpaired.Constants.MODEL_PATH
 import com.example.navigatorforvisuallyimpaired.databinding.ActivityCameraBinding
 import com.example.navigatorforvisuallyimpaired.entity.BoundingBox
-import com.example.navigatorforvisuallyimpaired.entity.HorizontalDirection
-import com.example.navigatorforvisuallyimpaired.entity.VoicedObject
 import com.example.navigatorforvisuallyimpaired.service.DepthCameraImageListener
 import com.example.navigatorforvisuallyimpaired.service.DetectorListener
 import com.example.navigatorforvisuallyimpaired.service.DetectorService
+import com.example.navigatorforvisuallyimpaired.service.DetectorServiceTensorFlow
+import com.example.navigatorforvisuallyimpaired.service.LocaleFileTranslator
 import com.example.navigatorforvisuallyimpaired.service.Translator
 import com.example.navigatorforvisuallyimpaired.service.VoicedObjectService
+import com.example.navigatorforvisuallyimpaired.service.VoicedObjectServiceImpl
 import com.example.tofcamera.DepthCameraService
 import java.util.Locale
 import java.util.concurrent.ExecutorService
@@ -48,7 +49,7 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
     private var camera: Camera? = null
     private var cameraProvider: ProcessCameraProvider? = null
     private var detector: DetectorService? = null
-    private var voicedObjectService: VoicedObjectService = VoicedObjectService()
+    private var voicedObjectService: VoicedObjectService = VoicedObjectServiceImpl()
     private lateinit var depthCamera: DepthCameraService<CameraActivity>
     private lateinit var depthCameraThread: HandlerThread
     private lateinit var cameraExecutor: ExecutorService
@@ -62,7 +63,7 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
 
     private lateinit var textToSpeech: TextToSpeech
     private val ttsExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-    private var translator: Translator = Translator(this)
+    private var translator: Translator = LocaleFileTranslator(this)
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,9 +74,10 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
         cameraExecutor = Executors.newSingleThreadExecutor()
 
         cameraExecutor.execute {
-            detector = DetectorService(baseContext, MODEL_PATH, LABELS_PATH, this) {
+            detector = DetectorServiceTensorFlow(baseContext, MODEL_PATH, LABELS_PATH, this) {
                 toast(it)
             }
+            detector?.restart(isGpu = true)
         }
 
         textToSpeech = TextToSpeech(this, this)
@@ -92,7 +94,6 @@ class CameraActivity : ComponentActivity(), DetectorListener, DepthCameraImageLi
         } else {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
         }
-        detector?.restart(isGpu = true)
         bindListeners()
     }
 
